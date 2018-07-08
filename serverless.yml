@@ -1,0 +1,20 @@
+service: myriapoda
+
+provider:
+  name: aws
+  runtime: go1.x
+  memorySize: 128
+
+package:
+ exclude:
+   - ./**
+ include:
+   - ./target/x86_64-unknown-linux-musl/release/api
+
+functions:
+  api:
+    handler: target/x86_64-unknown-linux-musl/release/api
+    events:
+      - http:
+          path: welcome
+          method: get
