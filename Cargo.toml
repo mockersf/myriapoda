@@ -4,3 +4,11 @@ version = "0.1.0"
 authors = ["François Mockers <mockersf@gmail.com>"]
 
 [dependencies]
+aws_lambda = { git = "https://github.com/srijs/rust-aws-lambda", rev = "906db4d4" }
+serde = "1.0"
+serde_derive = "1.0"
+http = "0.1"
+
+[lib]
+name = "myriapoda"
+path = "src/lib.rs"
