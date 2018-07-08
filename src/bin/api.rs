@@ -2,6 +2,7 @@ extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate http;
+extern crate serde_urlencoded;
 
 extern crate aws_lambda;
 

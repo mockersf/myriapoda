@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use serde::{Deserialize, Deserializer};
+use serde_urlencoded;
 
 use aws_lambda;
 use http;
@@ -13,6 +14,8 @@ pub struct ShortApiGatewayProxyRequest {
     #[serde(default, deserialize_with = "nullable_default")]
     pub headers: HashMap<String, String>,
     pub body: Option<String>,
+    #[serde(rename = "queryStringParameters", deserialize_with = "nullable_default")]
+    pub query_string_parameters: HashMap<String, String>,
 }
 
 fn nullable_default<'de, D, T>(deserializer: D) -> Result<T, D::Error>
@@ -43,7 +46,18 @@ impl<'a> Into<http::request::Request<&'a str>> for &'a ShortApiGatewayProxyReque
         let path: &str = self.path.as_ref();
 
         let mut builder = http::request::Request::builder();
-        builder.method(method).uri(path);
+        builder.method(method);
+        if self.query_string_parameters.is_empty() {
+            builder.uri(path);
+        } else {
+            builder.uri(format!(
+                "{}?{}",
+                path,
+                serde_urlencoded::to_string(&self.query_string_parameters)
+                    .expect("couldn't read query parameters")
+            ));
+        };
+
         self.headers.iter().for_each(|(key, value)| {
             let key: &str = key.as_ref();
             let value: &str = value.as_ref();
