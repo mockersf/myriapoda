@@ -14,14 +14,14 @@ extern crate myriapoda;
 
 use std::collections::HashMap;
 
-mod api_helpers;
+mod aws_api_helpers;
 
 fn main() {
-    aws_lambda::start(|req: api_helpers::ShortApiGatewayProxyRequest| {
+    aws_lambda::start(|req: aws_api_helpers::ShortApiGatewayProxyRequest| {
         let response = match (req.http_method.as_ref(), req.path.as_ref()) {
             ("GET", "/welcome") => myriapoda::hello(&(&req).into()),
             ("POST", "/mirror") => myriapoda::mirror(&(&req).into()),
-            (method, path) => Err(api_helpers::HttpError::UnexpectedPath {
+            (method, path) => Err(aws_api_helpers::HttpError::UnexpectedPath {
                 method: method.to_string(),
                 path: path.to_string(),
             }.into()),
@@ -29,7 +29,7 @@ fn main() {
 
         Ok(match response {
             Ok(response) => {
-                let a: api_helpers::Response = response.into();
+                let a: aws_api_helpers::Response = response.into();
                 a.0
             }
             Err(err) => aws_lambda::event::apigw::ApiGatewayProxyResponse {

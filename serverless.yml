@@ -9,11 +9,11 @@ package:
  exclude:
    - ./**
  include:
-   - ./target/x86_64-unknown-linux-musl/release/api
+   - ./target/x86_64-unknown-linux-musl/release/aws_api
 
 functions:
   api:
-    handler: target/x86_64-unknown-linux-musl/release/api
+    handler: target/x86_64-unknown-linux-musl/release/aws_api
     events:
       - http:
           path: welcome
