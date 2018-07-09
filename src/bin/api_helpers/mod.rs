@@ -33,7 +33,7 @@ impl<'a> From<http::response::Response<&'a str>> for Response {
     fn from(response: http::response::Response<&'a str>) -> Self {
         Response(aws_lambda::event::apigw::ApiGatewayProxyResponse {
             body: response.body().to_string(),
-            status_code: response.status().as_u16() as i64,
+            status_code: i64::from(response.status().as_u16()),
             is_base64_encoded: None,
             headers: HashMap::new(),
         })
@@ -70,4 +70,116 @@ impl<'a> Into<http::request::Request<&'a str>> for &'a ShortApiGatewayProxyReque
             builder.body("")
         }.expect("Couldn't build request")
     }
+}
+
+#[test]
+fn can_convert_to_request() {
+    extern crate serde_json;
+
+    let api_gateway_proxy_event = r#"
+{
+  "body": "{\"test\":\"body\"}",
+  "resource": "/{proxy+}",
+  "requestContext": {
+    "resourceId": "123456",
+    "apiId": "1234567890",
+    "resourcePath": "/{proxy+}",
+    "httpMethod": "POST",
+    "requestId": "c6af9ac6-7b61-11e6-9a41-93e8deadbeef",
+    "accountId": "123456789012",
+    "identity": {
+      "apiKey": null,
+      "userArn": null,
+      "cognitoAuthenticationType": null,
+      "caller": null,
+      "userAgent": "Custom User Agent String",
+      "user": null,
+      "cognitoIdentityPoolId": null,
+      "cognitoIdentityId": null,
+      "cognitoAuthenticationProvider": null,
+      "sourceIp": "127.0.0.1",
+      "accountId": null
+    },
+    "stage": "prod"
+  },
+  "queryStringParameters": {
+    "foo": "bar"
+  },
+  "headers": {
+    "Via": "1.1 08f323deadbeefa7af34d5feb414ce27.cloudfront.net (CloudFront)",
+    "Accept-Language": "en-US,en;q=0.8",
+    "CloudFront-Is-Desktop-Viewer": "true",
+    "CloudFront-Is-SmartTV-Viewer": "false",
+    "CloudFront-Is-Mobile-Viewer": "false",
+    "X-Forwarded-For": "127.0.0.1, 127.0.0.2",
+    "CloudFront-Viewer-Country": "US",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    "Upgrade-Insecure-Requests": "1",
+    "X-Forwarded-Port": "443",
+    "Host": "1234567890.execute-api.us-east-1.amazonaws.com",
+    "X-Forwarded-Proto": "https",
+    "X-Amz-Cf-Id": "cDehVQoZnx43VYQb9j2-nvCh-9z396Uhbp027Y2JvkCPNLmGJHqlaA==",
+    "CloudFront-Is-Tablet-Viewer": "false",
+    "Cache-Control": "max-age=0",
+    "User-Agent": "Custom User Agent String",
+    "CloudFront-Forwarded-Proto": "https",
+    "Accept-Encoding": "gzip, deflate, sdch"
+  },
+  "pathParameters": {
+    "proxy": "path/to/resource"
+  },
+  "httpMethod": "POST",
+  "stageVariables": {
+    "baz": "qux"
+  },
+  "path": "/path/to/resource"
+}
+"#;
+
+    let short = serde_json::from_str::<ShortApiGatewayProxyRequest>(api_gateway_proxy_event);
+    assert!(short.is_ok());
+    let short = &short.unwrap();
+
+    let request: http::Request<_> = short.into();
+    assert_eq!(request.method(), "POST");
+    assert_eq!(request.uri(), "/path/to/resource?foo=bar");
+    assert_eq!(*request.body(), "{\"test\":\"body\"}");
+    assert_eq!(
+        request
+            .headers()
+            .get("x-forwarded-proto")
+            .map(|v| v.to_str().unwrap()),
+        Some("https"),
+    );
+    assert_eq!(
+        request.headers().get("via").map(|v| v.to_str().unwrap()),
+        Some("1.1 08f323deadbeefa7af34d5feb414ce27.cloudfront.net (CloudFront)"),
+    );
+    assert_eq!(
+        request
+            .headers()
+            .get("x-amz-cf-id")
+            .map(|v| v.to_str().unwrap()),
+        Some("cDehVQoZnx43VYQb9j2-nvCh-9z396Uhbp027Y2JvkCPNLmGJHqlaA=="),
+    );
+}
+
+#[test]
+fn can_convert_from_response() {
+    let response: Response = http::response::Builder::new()
+        .status(200)
+        .header("my-header", "my-header-value")
+        .body("my body")
+        .expect("could not build response")
+        .into();
+
+    assert_eq!(
+        response.0,
+        aws_lambda::event::apigw::ApiGatewayProxyResponse {
+            body: "my body".to_string(),
+            status_code: 200,
+            is_base64_encoded: None,
+            headers: HashMap::new(),
+        }
+    );
 }
