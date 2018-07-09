@@ -183,3 +183,9 @@ fn can_convert_from_response() {
         }
     );
 }
+
+#[derive(Debug, Fail)]
+pub enum HttpError {
+    #[fail(display = "unexpected path: {} {}", method, path)]
+    UnexpectedPath { method: String, path: String },
+}
