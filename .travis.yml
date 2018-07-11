@@ -1,0 +1,50 @@
+language: rust
+
+cache: cargo
+
+rust:
+  - stable
+  - beta
+  - nightly
+
+matrix:
+  allow_failures:
+    - rust: nightly
+    - env: CARGO-TRAVIS
+  fast_finish: true
+  include:
+  - rust: stable
+    env: RUSTFMT
+    install:
+      - rustup component add rustfmt-preview
+    script:
+      - cargo fmt -- --write-mode=diff
+  - rust: nightly
+    env: CLIPPY
+    install:
+      - cargo install cargo-update || echo "cargo-update already installed"
+      - cargo install clippy || echo "cargo-clippy already installed"
+      - cargo install-update -a # update outdated cached binaries
+    script:
+      - cargo clippy -- -D clippy
+  - rust: stable
+    sudo: required
+    env: CARGO-TRAVIS
+    install:
+      - cargo install cargo-update || echo "cargo-update already installed"
+      - cargo install cargo-travis || echo "cargo-travis already installed"
+      - cargo install-update -a # update outdated cached binaries
+    script:
+      - cargo test
+    after_success:
+      - cargo coveralls --no-fail-fast
+    addons:
+      apt:
+        packages:
+          - libcurl4-openssl-dev
+          - libelf-dev
+          - libdw-dev
+          - binutils-dev
+          - cmake
+        sources:
+          - kalakris-cmake
