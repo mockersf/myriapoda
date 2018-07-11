@@ -1,6 +1,7 @@
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
+extern crate serde_json;
 extern crate serde_urlencoded;
 
 extern crate http;
@@ -21,6 +22,7 @@ fn main() {
         let response = match (req.http_method.as_ref(), req.path.as_ref()) {
             ("GET", "/welcome") => myriapoda::hello(&(&req).into()),
             ("POST", "/mirror") => myriapoda::mirror(&(&req).into()),
+            ("POST", "/conferences") => myriapoda::new_conference(&(&req).into()),
             (method, path) => Err(aws_api_helpers::HttpError::UnexpectedPath {
                 method: method.to_string(),
                 path: path.to_string(),

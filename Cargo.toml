@@ -8,11 +8,11 @@ aws_lambda = { git = "https://github.com/srijs/rust-aws-lambda", rev = "906db4d4
 serde = "1.0"
 serde_derive = "1.0"
 serde_urlencoded = "0.5"
+serde_json = "1.0"
 http = "0.1"
 failure = "0.1"
+chrono = { version = "0.4", features = ["serde"] }
 
-[dev-dependencies]
-serde_json = "1.0"
 
 [lib]
 name = "myriapoda"

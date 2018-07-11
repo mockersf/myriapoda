@@ -21,3 +21,6 @@ functions:
       - http:
           path: mirror
           method: post
+      - http:
+          path: conferences
+          method: post

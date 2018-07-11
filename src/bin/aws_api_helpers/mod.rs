@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use serde::{Deserialize, Deserializer};
+use serde_json;
 use serde_urlencoded;
 
 use aws_lambda;
@@ -40,8 +41,12 @@ impl<'a> From<http::response::Response<&'a str>> for Response {
     }
 }
 
-impl<'a> Into<http::request::Request<&'a str>> for &'a ShortApiGatewayProxyRequest {
-    fn into(self) -> http::request::Request<&'a str> {
+impl<'a, T> Into<http::request::Request<T>> for &'a ShortApiGatewayProxyRequest
+where
+    T: Default,
+    T: Deserialize<'a>,
+{
+    fn into(self) -> http::request::Request<T> {
         let method: &str = self.http_method.as_ref();
         let path: &str = self.path.as_ref();
 
@@ -65,9 +70,9 @@ impl<'a> Into<http::request::Request<&'a str>> for &'a ShortApiGatewayProxyReque
         });
 
         if let Some(ref body) = self.body {
-            builder.body(body.as_ref())
+            builder.body(serde_json::from_str::<T>(body.as_ref()).expect(""))
         } else {
-            builder.body("")
+            builder.body(T::default())
         }.expect("Couldn't build request")
     }
 }
@@ -140,10 +145,12 @@ fn can_convert_to_request() {
     assert!(short.is_ok());
     let short = &short.unwrap();
 
-    let request: http::Request<_> = short.into();
+    let request: http::Request<HashMap<String, String>> = short.into();
     assert_eq!(request.method(), "POST");
     assert_eq!(request.uri(), "/path/to/resource?foo=bar");
-    assert_eq!(*request.body(), "{\"test\":\"body\"}");
+    let mut body = HashMap::new();
+    body.insert("test".to_string(), "body".to_string());
+    assert_eq!(*request.body(), body);
     assert_eq!(
         request
             .headers()
