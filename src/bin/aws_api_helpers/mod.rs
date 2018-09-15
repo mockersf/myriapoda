@@ -15,7 +15,10 @@ pub struct ShortApiGatewayProxyRequest {
     #[serde(default, deserialize_with = "nullable_default")]
     pub headers: HashMap<String, String>,
     pub body: Option<String>,
-    #[serde(rename = "queryStringParameters", deserialize_with = "nullable_default")]
+    #[serde(
+        rename = "queryStringParameters",
+        deserialize_with = "nullable_default"
+    )]
     pub query_string_parameters: HashMap<String, String>,
 }
 
